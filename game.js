@@ -1323,14 +1323,14 @@ function updatePlayer(delta) {
 
 function updateWeapon(delta, sprinting) {
   const bobAmount = player.isMoving ? (sprinting ? 0.025 : 0.016) : 0.004;
-  const targetX = player.aiming
-    ? 0.015
-    : 0.28 + Math.cos(player.walkPhase * 0.5) * bobAmount;
+  // 开镜时画面交给全屏瞄准镜，枪身保持水平位置、只向下沉出画面；
+  // 否则枪体和枪上准星会落在镜筒中央，挡住镜内准线。
+  const targetX = 0.28 + Math.cos(player.walkPhase * 0.5) * bobAmount;
   const targetY =
-    (player.aiming ? -0.17 : -0.27) +
+    (player.aiming ? -0.95 : -0.27) +
     Math.abs(Math.sin(player.walkPhase)) * bobAmount -
     player.recoil * 0.025;
-  const targetZ = (player.aiming ? -0.4 : -0.54) + player.recoil * 0.09;
+  const targetZ = -0.54 + player.recoil * 0.09;
 
   weapon.group.position.x += (targetX - weapon.group.position.x) * Math.min(1, delta * 12);
   weapon.group.position.y += (targetY - weapon.group.position.y) * Math.min(1, delta * 14);
