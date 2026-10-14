@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#091014" />
+    <title>Neon Breach: FPS Prototype</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./style.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./node_modules/three/build/three.module.js",
+          "three/addons/": "./node_modules/three/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main id="game-shell">
+      <canvas id="game-canvas"></canvas>
+
+      <section id="hud" aria-label="游戏状态">
+        <div class="hud-top-left">
+          <div class="status-card">
+            <div class="status-label">VITALS</div>
+            <div class="status-row">
+              <span>生命</span>
+              <strong id="health-value">100</strong>
+            </div>
+            <div class="meter"><i id="health-bar"></i></div>
+            <div class="status-row compact">
+              <span>护甲</span>
+              <strong id="armor-value">50</strong>
+            </div>
+            <div class="meter armor"><i id="armor-bar"></i></div>
+          </div>
+        </div>
+
+        <div class="hud-top-center">
+          <div class="mission-title">NEON BREACH</div>
+          <div id="objective">清除全部敌对单位</div>
+          <div class="wave-readout">
+            <span>WAVE</span>
+            <strong id="wave-value">1</strong>
+            <span id="wave-status">准备中</span>
+          </div>
+        </div>
+
+        <div class="hud-top-right">
+          <div class="status-card score-card">
+            <div class="status-label">COMBAT RECORD</div>
+            <div class="score-line"><span>击杀</span><strong id="kills-value">0</strong></div>
+            <div class="score-line"><span>得分</span><strong id="score-value">0</strong></div>
+          </div>
+          <div class="radar-frame">
+            <canvas id="radar" width="180" height="180"></canvas>
+            <div class="radar-ring"></div>
+            <div class="radar-label">TACTICAL MAP</div>
+          </div>
+        </div>
+
+        <div class="hud-bottom-right">
+          <div class="ammo-block">
+            <div class="weapon-name">VX-7 PULSE RIFLE</div>
+            <div class="ammo-line">
+              <strong id="ammo-value">24</strong>
+              <span>/ <b id="reserve-value">120</b></span>
+            </div>
+            <div id="reload-status">READY</div>
+          </div>
+        </div>
+
+        <div id="hit-marker" aria-hidden="true">
+          <i></i><i></i><i></i><i></i>
+        </div>
+        <div id="crosshair" aria-hidden="true">
+          <i class="cross-top"></i>
+          <i class="cross-right"></i>
+          <i class="cross-bottom"></i>
+          <i class="cross-left"></i>
+          <b></b>
+        </div>
+        <div id="damage-vignette" aria-hidden="true"></div>
+        <div id="ads-overlay" aria-hidden="true">
+          <div class="ads-vignette"></div>
+          <div class="ads-scope">
+            <i class="scope-line scope-line-h"></i>
+            <i class="scope-line scope-line-v"></i>
+            <b class="scope-dot"></b>
+            <span class="scope-tick tick-top"></span>
+            <span class="scope-tick tick-right"></span>
+            <span class="scope-tick tick-bottom"></span>
+            <span class="scope-tick tick-left"></span>
+          </div>
+          <div class="ads-readout">
+            <span>VX-7 OPTIC</span>
+            <strong>ADS</strong>
+          </div>
+        </div>
+        <div id="kill-feed" aria-live="polite"></div>
+        <div id="notification" aria-live="polite"></div>
+      </section>
+
+      <section id="start-screen" class="screen visible">
+        <div class="start-panel">
+          <div class="eyebrow">THREE.JS REAL-TIME COMBAT PROTOTYPE</div>
+          <h1>NEON<br />BREACH</h1>
+          <p>
+            在废弃反应堆中抵御一波又一波机械守卫。保持移动，瞄准弱点，
+            利用掩体和冲刺活到最后。
+          </p>
+          <div class="mode-strip">
+            <div><span>模式</span><strong>生存战</strong></div>
+            <div><span>环境</span><strong>反应堆核心</strong></div>
+            <div><span>难度</span><strong>动态增长</strong></div>
+          </div>
+          <button id="start-button" type="button">
+            <span>进入战场</span>
+            <small>点击后锁定鼠标</small>
+          </button>
+          <div class="controls-grid">
+            <span><kbd>W A S D</kbd> 移动</span>
+            <span><kbd>SHIFT</kbd> 冲刺</span>
+            <span><kbd>SPACE</kbd> 跳跃</span>
+            <span><kbd>R</kbd> 换弹</span>
+            <span><kbd>鼠标</kbd> 瞄准</span>
+            <span><kbd>左键</kbd> 射击</span>
+            <span><kbd>右键</kbd> 开镜</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="pause-screen" class="screen">
+        <div class="pause-panel">
+          <div class="eyebrow">SIMULATION PAUSED</div>
+          <h2>战斗暂停</h2>
+          <p>点击继续并重新锁定鼠标。</p>
+          <button id="resume-button" type="button">继续战斗</button>
+        </div>
+      </section>
+
+      <section id="game-over" class="screen">
+        <div class="game-over-panel">
+          <div class="eyebrow danger">OPERATOR DOWN</div>
+          <h2>任务失败</h2>
+          <div class="result-grid">
+            <div><span>抵达波次</span><strong id="final-wave">1</strong></div>
+            <div><span>击杀数量</span><strong id="final-kills">0</strong></div>
+            <div><span>最终得分</span><strong id="final-score">0</strong></div>
+          </div>
+          <button id="restart-button" type="button">重新部署</button>
+        </div>
+      </section>
+
+      <div id="mobile-warning">
+        <strong>建议使用电脑游玩</strong>
+        <span>该 FPS 需要键盘和鼠标控制。</span>
+      </div>
+    </main>
+
+    <script type="module" src="./game.js"></script>
+  </body>
+</html>
